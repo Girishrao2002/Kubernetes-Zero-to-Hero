@@ -48,18 +48,25 @@ minikube start --driver=docker
 kubectl get nodes
 ```
 
-## Build the app image
+## Build and push the app image
 
-From this project directory:
+This version is set up to deploy directly from a registry, so you do not need `minikube image load`.
+
+Replace `yourdockerhubusername` with your actual Docker Hub username and run:
 
 ```bash
 cd /path/to/Service-demo
-eval $(minikube docker-env)
-docker build -t service-demo:latest .
-minikube image load service-demo:latest
+docker build -t yourdockerhubusername/service-demo:latest .
+docker push yourdockerhubusername/service-demo:latest
 ```
 
-The Deployment files use `imagePullPolicy: Never`, which is suitable for this local Minikube demo.
+If you prefer a private registry or a local registry, use that image name instead of Docker Hub.
+
+The Deployment files use `imagePullPolicy: Always` and reference:
+
+```yaml
+image: yourdockerhubusername/service-demo:latest
+```
 
 ## Deploy all services
 
@@ -125,12 +132,19 @@ Open the URL printed by Minikube in the browser.
 
 ## Troubleshooting
 
-If you see `ImagePullBackOff`, rebuild and reload the image into Minikube:
+If you see `ImagePullBackOff`, it usually means the image name in the Deployment does not match the registry image you pushed.
+
+Check the YAML image value and make sure it matches exactly:
+
+```yaml
+image: yourdockerhubusername/service-demo:latest
+```
+
+Then push the image again and re-apply the manifests:
 
 ```bash
-eval $(minikube docker-env)
-docker build -t service-demo:latest .
-minikube image load service-demo:latest
+docker build -t yourdockerhubusername/service-demo:latest .
+docker push yourdockerhubusername/service-demo:latest
 kubectl delete -f k8s/
 kubectl apply -f k8s/
 ```

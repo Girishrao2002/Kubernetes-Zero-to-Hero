@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: service-demo
-          image: service-demo:latest
-          imagePullPolicy: Never
+          image: yourdockerhubusername/service-demo:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
