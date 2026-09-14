@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-loadbalancer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-demo
+      service-type: loadbalancer
+  template:
+    metadata:
+      labels:
+        app: service-demo
+        service-type: loadbalancer
+    spec:
+      containers:
+        - name: service-demo
+          image: service-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_NAME
+              value: "demo-loadbalancer"
+            - name: SERVICE_TYPE
+              value: "LoadBalancer"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace

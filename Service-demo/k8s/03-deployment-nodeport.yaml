@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-nodeport
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-demo
+      service-type: nodeport
+  template:
+    metadata:
+      labels:
+        app: service-demo
+        service-type: nodeport
+    spec:
+      containers:
+        - name: service-demo
+          image: service-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_NAME
+              value: "demo-nodeport"
+            - name: SERVICE_TYPE
+              value: "NodePort"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace

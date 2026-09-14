@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-clusterip
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-demo
+      service-type: clusterip
+  template:
+    metadata:
+      labels:
+        app: service-demo
+        service-type: clusterip
+    spec:
+      containers:
+        - name: service-demo
+          image: service-demo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_NAME
+              value: "demo-clusterip"
+            - name: SERVICE_TYPE
+              value: "ClusterIP"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
