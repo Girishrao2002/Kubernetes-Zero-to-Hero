@@ -1,42 +1,78 @@
 # Kubernetes Service Types Demo
 
-This project provides a tiny web application that shows how Kubernetes Service types behave in a Minikube cluster.
-
-It includes three examples:
+This project demonstrates the three common Kubernetes Service types using a simple Python web app running inside Minikube:
 
 1. ClusterIP
 2. NodePort
 3. LoadBalancer
 
+The app is intentionally tiny and prints the active service type along with the pod name and namespace so you can visually confirm routing behavior.
+
 ## Application behavior
 
-Every pod serves a simple HTML page that displays:
+Each pod serves a simple HTML page on port 8000 and exposes a health endpoint at `/healthz`.
+
+The page shows:
 
 - the current Service type
 - the pod hostname
 - the namespace
 
-The app also exposes a health endpoint at `/healthz`.
+## Project structure
 
-## File structure
+- `app.py` — Python app that runs the demo website
+- `Dockerfile` — container image definition
+- `k8s/` — Kubernetes manifests for the service examples
 
-- `app.py` — small Python HTTP app
-- `Dockerfile` — container image for the demo app
-- `k8s/` — Kubernetes manifests
+## Prerequisites for Ubuntu
 
-## Build the image
-
-From this directory:
+Install Docker, Minikube, and kubectl:
 
 ```bash
+sudo apt update
+sudo apt install -y curl ca-certificates conntrack docker.io
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+chmod +x minikube-linux-amd64
+sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+```
+
+Start Minikube:
+
+```bash
+minikube start --driver=docker
+kubectl get nodes
+```
+
+## Build the app image
+
+From this project directory:
+
+```bash
+cd /path/to/Service-demo
+eval $(minikube docker-env)
 docker build -t service-demo:latest .
 minikube image load service-demo:latest
 ```
 
-## Run locally
+The Deployment files use `imagePullPolicy: Never`, which is suitable for this local Minikube demo.
+
+## Deploy all services
 
 ```bash
-python app.py
+kubectl apply -f k8s/
+kubectl get deployments,pods,svc
+```
+
+## Run locally on your machine
+
+```bash
+cd /path/to/Service-demo
+python3 app.py
 ```
 
 Then open:
@@ -45,49 +81,63 @@ Then open:
 http://localhost:8000
 ```
 
-## Deploy all services
+Health check:
 
-```bash
-kubectl apply -f k8s/
-```
-
-## Verify the resources
-
-```bash
-kubectl get deployments,pods,svc
+```text
+http://localhost:8000/healthz
 ```
 
 ## Test each service type
 
 ### 1) ClusterIP
 
-This type is only reachable inside the cluster:
+This service is reachable only from inside the cluster. Create a temporary pod and curl the service name:
 
 ```bash
-kubectl get svc | grep clusterip
 kubectl run curl --rm -it --restart=Never --image=curlimages/curl -- sh
-# inside the pod
+```
+
+Inside the pod:
+
+```bash
 curl http://demo-clusterip.default.svc.cluster.local
 ```
 
 ### 2) NodePort
 
+This service exposes the app on a node port for external access:
+
 ```bash
 minikube service demo-nodeport --url
 ```
 
-Then open the URL printed by Minikube in a browser.
+Open the URL printed by Minikube in the browser.
 
 ### 3) LoadBalancer
+
+This service is exposed via a load balancer-like endpoint in Minikube:
 
 ```bash
 minikube service demo-loadbalancer --url
 ```
 
-Then open the URL printed by Minikube in a browser.
+Open the URL printed by Minikube in the browser.
+
+## Troubleshooting
+
+If you see `ImagePullBackOff`, rebuild and reload the image into Minikube:
+
+```bash
+eval $(minikube docker-env)
+docker build -t service-demo:latest .
+minikube image load service-demo:latest
+kubectl delete -f k8s/
+kubectl apply -f k8s/
+```
 
 ## Cleanup
 
 ```bash
 kubectl delete -f k8s/
+minikube stop
 ```
