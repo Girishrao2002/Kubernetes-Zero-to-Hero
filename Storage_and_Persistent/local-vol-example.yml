@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/local-pv
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: local-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  storageClassName: local-storage
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-pv-pod1
+spec:
+  containers:
+    - name: local-pv-container
+      image: busybox:1.36.1
+      command:
+        - 'sh'
+        - '-c'
+        - 'sleep 3600'
+      resources:
+        limits:
+          memory: '128Mi'
+          cpu: '500m'
+      volumeMounts:
+        - name: local-volume
+          mountPath: /mnt/local-pv1
+  volumes:
+    - name: local-volume
+      persistentVolumeClaim:
+        claimName: local-pvc                
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-pv-pod2
+spec:
+  containers:
+    - name: local-pv-container
+      image: busybox:1.36.1
+      command:
+        - 'sh'
+        - '-c'
+        - 'sleep 3600'
+      resources:
+        limits:
+          memory: '128Mi'
+          cpu: '500m'
+      volumeMounts:
+        - name: local-volume
+          mountPath: /mnt/local-pv2
+  volumes:
+    - name: local-volume
+      persistentVolumeClaim:
+        claimName: local-pvc                        
